@@ -1,0 +1,156 @@
+---
+title: "Actividad 6"
+author: "Martín Gabriel Blanco Desvars"
+date: "1/4/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Ejercicio 1
+
+1. Crear una  nuevo repositorio en GitHub llamado Actividad 6.
+
+2. Crear un proyecto de RStudio y conectarlo con su nuevo repositorio en GitHub
+
+3. Abrir un archivo de Rmarkdown que compile a pdf con la solución de la Actividad 6, puede usar como base el .Rmd que está disponible en EVA. 
+
+4. Realizar el primer `commit` y `push` con la Actividad 6 en su nuevo repositorio de GitHub (sólo el .Rmd).
+
+
+# Ejercicio 2
+
+Cargar la librería `tidyverse` y con los datos `mpg` usar las funciones que vimos de `dplyr` para  transformar los datos de la siguiente forma.
+
+1. Seleccionar el conjunto de autos del 2008 que tienen `hwy` mayor a 31. ¿Cuantos autos son?
+
+``` {r, echo= TRUE}
+library(tidyverse)
+
+ new_data <- filter(mpg, year ==2008, hwy > 31)
+ new_data
+ ```
+  Quedan 6 autos
+ 
+2. Seleccionar el conjutno de autos que tienen `cty` igual a 9 ó hwy es mayor a 90. ¿Cuantos autos son? 
+  
+``` {r, echo= TRUE}
+new_data <- filter(mpg, cty == 9 | hwy > 90)
+new_data
+```
+ Quedan 5 autos
+
+3. Selecciona la variable `displ` y `hwy`
+
+```{r, echo=TRUE}
+new_data <- select(mpg, displ, hwy)
+ new_data
+ ```
+
+4. Seleccioná desde la variable `trans` hasta la variable `hwy`
+ 
+```{r, echo=TRUE}
+ new_data <- select(mpg, trans:hwy)
+ new_data
+```
+ 
+5. Crear una nueva variable que transforme  `hwy` (millas por galón) en litros/100 km 
+Primero tenés que saber la conversión de galones a litros y de millas a kilómetros
+
+`1 gallón = 3.78541 litros`
+
+`1 milla = 1.60934 km`
+
+```{r, echo=TRUE}
+new_data <- mutate(mpg, hw= hwy*0.42514)
+new_data
+x<- select(new_data,hwy, hw)
+
+x
+```
+
+#Ejercicio 3
+
+Para esta actividad vamos a utilizar los datos happy que se encuentran en la librería productplots. Con
+estos datos vamos a investigar algunas preguntas sobre que cosas afectan la felicidad de la gente. Para
+responder estas preguntas utilizaremos dplyr
+
+1. Encontrá el porcentaje para los distintos niveles de felicidad para hombres y mujeres a lo largo de todos
+los años
+
+```{r, echo=TRUE}
+library(productplots)
+new_data <- filter(happy,!is.na(happy)) %>% group_by(sex,happy,year) %>% summarise(cont=n()) %>%arrange(year) %>% group_by(year,sex) %>% mutate(percent=(cont/sum(cont)*100))
+```
+
+2. Graficá los porcentajes en un gráfico de dispersión con year en el eje x y porcentaje en el eje y. Tendría
+que haber un total de seis puntos para cada año, coloreálos puntos según happy y remové los NA en
+happy usando filter.
+
+```{r, echo=TRUE}
+new_data  %>% ggplot(aes(x= year , y= percent , colour= happy)) + geom_point()+ facet_wrap(~sex)+ geom_smooth(method = "loess" , se= FALSE)+ labs(title="Gráfico de Dispersión: Niveles de felicidad a lo largo del tiempo ()",x= NULL)+ scale_color_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))
+```
+
+
+3. ¿Cómo se ve afectada la felicidad según el género?
+
+El comportamiento de la variable felicidad es semejante en ambos sexos, sin embargo al nivel "muy feliz" el porcentaje de mujeres es mayor.
+
+
+4. ¿Cómo se ve afectada la felicidad según el edad? ¿Existe una diferencia entre hombres y mujeres?
+
+```{r, echo=TRUE}
+filter(happy,!is.na(happy)) %>% group_by(sex,happy,age) %>% summarise(cont=n())%>% group_by(age,sex) %>% mutate(percent=(cont/sum(cont)*100))%>% ggplot(aes(x= age , y= percent , fill= happy))+ facet_wrap(~sex)+ geom_area()+ labs(title="Gráfico de Área: Niveles de felicidad según sexo y edad",x= "Edad")+ scale_fill_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))
+```
+
+El comportamiento de la variable felicidad es muy semejante  a excepción de un tendencia positiva a lo largo del tiempo para el nivel muy feliz en la población masculino. 
+
+5. ¿Y si analizamos por estado civil y situación financiera qué encontramos?
+
+```{r, echo=TRUE}
+
+library(ggmosaic)
+
+happy %>% filter(!is.na(happy)) %>% group_by(happy,marital) %>% arrange(marital)%>% group_by(marital,happy) %>% summarise(cont=n()) %>%
+     ggplot() +
+    geom_mosaic(aes( weight=cont, x=product(happy,marital), colour=happy, fill=happy), na.rm=TRUE,)+ labs(title="Gráfico de Mosaicos: Niveles de felicidad según estado civil",x= "Estado Civil")+ scale_fill_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+La población de personas casadas cuenta con la mayor proporción de individuos muy felices contrastando con la población separada que cuenta con proporción de individuos no muy felices.
+
+```{r, echo=TRUE}
+
+happy %>% filter(!is.na(happy)) %>% group_by(happy,finrela) %>%  arrange(finrela)%>% group_by(finrela,happy) %>% summarise( cont=n()) %>%
+    ggplot() +
+    geom_mosaic(aes( weight=cont,x =product(happy,finrela), colour=happy, fill=happy))+  scale_fill_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))+ labs(title="Gráfico de Mosaicos: Niveles de felicidad según estado civil",x= "Estado Civil")+ labs(title="Gráfico de Mosaicos: Niveles de felicidad según situación financiera",x= "Situación Financiera")+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+Se observa una tendencia positiva a medida que mejora la situación financiera también aumenta la proporción de individuos muy felices, disminuyendo la proporción de individuos no muy felices.
+
+
+6. En relación a la variable educación ¿Qué se puede ver?
+
+```{r, echo=TRUE}
+happy %>% filter(!is.na(happy)) %>% group_by(happy,degree) %>%  arrange(degree)%>% group_by(degree,happy) %>% summarise( cont=n()) %>%
+    ggplot() +
+    geom_mosaic(aes( weight=cont,x =product(happy,degree), colour=happy, fill=happy))+  scale_fill_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))+ labs(title="Gráfico de Mosaicos: Niveles de felicidad según nivel educativo",x= "Nivel Educativo")+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+```
+
+Similar a la situación financiera medida que mejora el nivel educativo también aumenta la proporción de individuos muy felices, disminuyendo la proporción de individuos no muy felices.
+
+7. ¿Y respecto a salud?
+
+```{r, echo=TRUE}
+
+levels(happy$health)
+
+happy %>% filter(!is.na(happy)) %>% group_by(happy,health) %>%  arrange(health) %>% group_by(health,happy) %>% summarise(cont=n()) %>%drop_na() %>%
+    ggplot() +
+     geom_mosaic(aes( weight=cont, x=product(happy,health), colour=happy, fill=happy))+  scale_fill_discrete(name="Niveles de Felicidad", labels=c("No muy feliz", "Bastante feliz","Muy feliz"))+ labs(title="Gráfico de Mosaicos: Niveles de felicidad según estado de salud",x= "Estado de Salud")+ theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+De los individuos que poseen exelente estado de salud aproximadamente el 47% es muy feliz mientras que el 38% de los individuos en condición de salud pobre se encuentran no muy felices.
